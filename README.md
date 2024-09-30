@@ -1,28 +1,40 @@
 # Информация для выполнения лабораторных по фундаментальным алгоритмам
-Тут размещена информация необходимая для успешного выполнения лабораторных работ
+Тут размещена информация необходимая для успешного выполнения лабораторных работ.
 
 ## Оглавление
-1. [Полезные ссылки](#полезные-ссылки)
-2. [Общие правила](#общие-правила)
-3. [Лабораторные](#лабораторные)
+1. [Важные ссылки](#важные-ссылки)
+2. [Полезные ссылки](#полезные-ссылки)
+3. [Общие правила](#общие-правила)
+4. [Лабораторные](#лабораторные)
     1. [№1](#1)
+    2. [№2](#2)
+    3. [№3](#3)
+
+## Важные ссылки
+- [Гугл таблица](https://docs.google.com/spreadsheets/d/14UD-tmvK7HHcdCbPTHBONJz0NYTGkpL77ajRyfooxtc/edit?gid=0#gid=0) с результатами сдачи лабораторных.
 
 ## Полезные ссылки
-1. [Visual Studio Code](https://code.visualstudio.com/download)
-2. [C Documentation](https://en.cppreference.com/w/c)
-3. [Ответы на все вопросы](https://yandex.ru/)
+- [Visual Studio Code](https://code.visualstudio.com/download)
+- [C Documentation](https://en.cppreference.com/w/c)
+- [Ответы на все вопросы](https://yandex.ru/)
 
 ## Общие правила
 
 1. Нельзя использовать функцию _exit_ вне функции _main_ (в самой функции _main_ она не имеет смысла, т.к. можно вызвать return).
 
-2. При работе с потоком вывода информации запрещено передавать туда что то кроме переменных или констант.</br>
+2. При работе с массивами и функциями запрещено передавать в них что то кроме значения переменных, констант или арифметических операций над ними (за исключением унарных).</br>
     Верный вариант:
     ```c
     #include <stdio.h>
     int main(void) {
         int i = 0, j = 1;
-        printf("i=%d, j=%d", i, j);
+        int arr[12];
+        int a = arr[i];
+        i++;
+        int r = fabs(j - i);
+        printf("(i++)=%d, fabs(j-i)=%d, (a--)=%d", i, r, a);
+        i++;
+        a--;
         return 0;
     }
     ```
@@ -31,7 +43,9 @@
     #include <stdio.h>
     int main(void) {
         int i = 0, j = 1;
-        printf("i=%d, j=%d", i+1, j-i);
+        int arr[12];
+        int a = arr[i++];
+        printf("(i++)=%d, fabs(j-i)=%d, (a--)=%d", i++, fabs(j-i), a--);
         return 0;
     }
     ```
@@ -231,7 +245,67 @@
     ```
 
 10. Использование оператора _goto_ недопустимо и его наличие означает несдачу лабораторной работы.
+
+11. Вывод ошибки в консоль должен быть информативный. </br>
+    Верный вариант:
+    ```c
+    #include <string.h>
+    #include <stdio.h>
+    int func(const char* str) {
+        if (!strlen(str)) {
+            return -1;
+        }
+        printf("%s", str);
+        return 0;
+    }
+
+    int main(int argc, char* argv[]) {
+        if (argc != 2) {
+            printf("Wrong argv count. Required 1 passed %d.\n", argc - 1);
+            return -1;
+        }
+        int res = str_act("Hello world");
+        if (res) {
+            printf("Error. Passed string was empty.\n");
+            return -2;
+        }
+        return 0;
+    }
+    ```
+
+    Неверный вариант:
+    ```c
+    #include <string.h>
+    #include <stdio.h>
+    int func(const char* str) {
+        if (!strlen(str)) {
+            return -1;
+        }
+        printf("%s", str);
+        return 0;
+    }
+
+    int main(int argc, char* argv[]) {
+        if (argc != 2) {
+            printf("ERROR.\n");
+            return -1;
+        }
+        int res = str_act("Hello world");
+        if (res) {
+            printf("ERROR.\n");
+            return -2;
+        }
+        return 0;
+    }
+    ```
 ## Лабораторные
 ### №1
 
-[Файл](./Lab1.pdf) с заданием
+[Файл](./Lab1.pdf) с заданием. </br> Дедлайн 19.10.2024
+
+### №2
+
+[Файл](./Lab2.pdf) с заданием. </br> Дедлайн 25.10.2024
+
+### №3
+[Файл](./Lab3.pdf) с заданием. </br> Дедлайн 08.11.2024
