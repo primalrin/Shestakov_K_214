@@ -1,0 +1,19 @@
+if [ $# -ne 3 ]
+then
+    echo "Incorrect test usage. Expected <exec file with args> <return code> <line with output message>"
+    exit 1
+fi
+
+ret=$2
+
+if (( $ret < 0 ))
+then
+    ret=$(( 256 + $ret ))
+fi
+
+if [[ $($(pwd)/$1) = $3 && $? = $ret ]]
+then
+    exit 0
+else
+    exit 2
+fi
