@@ -4,12 +4,12 @@ then
     exit 1
 fi
 
-if [ $1 -eq 0 ]
+if [ $2 = 0 ]
 then
     echo "The return code cannot be 0 in a failed test"
     exit 1
 fi
 
-"${BASH_SOURCE%/*}"/template_cmd "$1" "$2" "$3"
+"${BASH_SOURCE%/*}"/template_output_file "$1" "$2" "$3"
 
 exit $?

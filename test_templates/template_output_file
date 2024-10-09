@@ -16,9 +16,20 @@ then
     ret=$(( 256 + $ret ))
 fi
 
-if [[ $($(pwd)/$1) = $(cat $3) && $? = $ret ]]
+res=$($(pwd)/$1)
+
+ret_code=$?
+
+if [[ $(cat $3) = $res && $ret_code = $ret ]]
 then
     exit 0
 else
+    echo "Passed args:"
+    echo $*
+    echo $res > ./tmp.txt
+    echo "Incorrect answer: expected return code=\""$(ret)"\", received=\""$(ret_code)"\"" 
+    echo "Output difference:"
+    echo $(diff $3 ./tmp.txt)
+    rm ./tmp.txt 
     exit 2
 fi

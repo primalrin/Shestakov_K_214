@@ -5,6 +5,6 @@ int main(int argc, char* argv[]) {
         printf("Incorrect args count");
         return -1;
     }
-    printf(argv[1]);
+    printf("%s", argv[1]);
     return 0;
 }

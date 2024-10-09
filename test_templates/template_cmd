@@ -11,9 +11,16 @@ then
     ret=$(( 256 + $ret ))
 fi
 
-if [[ $($(pwd)/$1) = $3 && $? = $ret ]]
+res=$($(pwd)/$1)
+
+ret_code=$?
+
+if [[ $res = $3 && $ret_code = $ret ]]
 then
     exit 0
 else
+    echo "Passed args:"
+    echo $*
+    echo "Incorrect answer: expected output=\""$3"\", received=\""$(res)"\", expected return code=\""$(ret)"\", received=\""$(ret_code)"\""
     exit 2
 fi
