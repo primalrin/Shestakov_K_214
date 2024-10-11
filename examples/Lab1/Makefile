@@ -1,4 +1,5 @@
 CС=gcc
+CFLAGS= -Wall -Werror -Wextra
 
 SOURCES=task_1.c task_2.c # Тут вы перечислятете файлы с вашими лабами по 1 файлу на задание
 TEST_TEMPLATES_DIR=../../test_templates# Это директория с шаблонами тестов (если вы их разместите в той же директории что и лабы пишите ./)
@@ -17,7 +18,7 @@ SUCCESS_RFILE_OFILE=$(BASH) $(TEST_TEMPLATES_DIR)/success_rfile_ofile
 all: $(EXECUTABLES) # Чтобы собрать все лабы надо ввести команду make
 
 %.a : %.c
-	$(CC) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
 clean: # Чтобы удалить все исполняемые файлы надо ввести команду make clean
 	rm -r -f *.a
