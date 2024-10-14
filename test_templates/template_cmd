@@ -15,7 +15,7 @@ res=$($(pwd)/$1)
 
 ret_code=$?
 
-if [[ $res = $3 && $ret_code = $ret ]]
+if [[ "$res" = "$3" && $ret_code = $ret ]]
 then
     exit 0
 else
