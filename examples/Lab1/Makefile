@@ -88,6 +88,9 @@ clean: # Чтобы удалить все исполняемые файлы на
 # Символ @ необходимо писать для подавления лишнего вывода в консоль при выполнении make файла.
 #  
 
+test_task_1: test_command_args_1 test_command_args_ofile_1 test_input_output_success_1
+	
+
 test_command_args_1:
 	@$(FAILED_CMD) "task_1.a" -1 "Incorrect args count"
 	@echo "TEST 1 PASSED"
@@ -100,6 +103,10 @@ test_input_output_success_1:
 	@$(SUCCESS_IFILE_OFILE) "task_1.a 12" "console_input_file_for_task_1.txt" "2_output_for_task_1.txt"
 	@echo "TEST 3 PASSED"
 
+
+test_task_2: test_command_args_2 test_success_task_2
+
+
 test_command_args_2:
 	@$(FAILED_CMD) "task_2.a" 2 "Incorrect args count"
 	@echo "TEST 4 PASSED"
@@ -107,6 +114,8 @@ test_command_args_2:
 test_success_task_2:
 	@$(SUCCESS_RFILE_CMD) "task_2.a ./input_file_for_task_2.txt ./output_file_for_task_2.txt" "" "./output_file_for_task_2.txt" "expected_data_for_task_2.txt"
 	@echo "TEST 5 PASSED"
+
+test_task_3: test_command_args_3 test_success_task_3
 
 
 test_command_args_3:
@@ -118,7 +127,5 @@ test_success_task_3:
 	@$(SUCCESS_CMD) "task_3.a 1 2" "argv_1+argv_2=3"
 	@echo "TEST 7 PASSED"
 
-test: test_command_args_1 test_command_args_ofile_1 test_input_output_success_1 test_command_args_2 test_success_task_2 test_command_args_3 test_success_task_3# Здесь перечисляются все написанные вами тесты. Запуск тестов производится по команде make test
+test: test_task_1 test_task_2 test_task_3 # Здесь перечисляются все написанные вами тесты. Запуск тестов производится по команде make test
 	
-
-
