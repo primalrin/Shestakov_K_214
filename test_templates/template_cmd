@@ -1,6 +1,6 @@
 if [ $# -ne 3 ]
 then
-    echo "Incorrect test usage. Expected <exec file with args> <return code> <line with output message>"
+    echo "Incorrect test usage. Expected <exec file with args> <return code> <line with console output message>"
     exit 1
 fi
 
@@ -21,6 +21,6 @@ then
 else
     echo "Passed args:"
     echo $*
-    echo "Incorrect answer: expected output=\""$3"\", received=\""$(res)"\", expected return code=\""$(ret)"\", received=\""$(ret_code)"\""
+    echo "Incorrect answer: expected output=\"$3\", received=\"$res\", expected return code=\"$ret\", received=\"$ret_code\""
     exit 2
 fi
