@@ -331,7 +331,7 @@
 ### Рекомендации
 - Если при выполнении <i>"make test"</i> возникает ошибка <i>"Permission denied"</i> необходимо переместиться в [директорию с тестами](./test_templates/) и применить команду;
     ```bash
-    sudo chmod +x *
+    sudo chmod +r *
     ```
 - Пользователям Windows установить [WSL](https://learn.microsoft.com/ru-ru/windows/wsl/install);
 - При разработке тестов проанализировать содержимое тестирующих [bash скриптов](./test_templates/).
