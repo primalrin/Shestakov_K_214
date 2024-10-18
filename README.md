@@ -338,7 +338,12 @@
     sudo chmod +x *
     ```
 - Пользователям Windows установить [WSL](https://learn.microsoft.com/ru-ru/windows/wsl/install);
-- При разработке тестов проанализировать содержимое тестирующих [bash скриптов](./test_templates/).
+- При разработке тестов проанализировать содержимое тестирующих [bash скриптов](./test_templates/);
+- В случае возникновения ошибки похожей на:
+    ```
+    ../../test_templates/failed_cmd: line 17: syntax error: unexpected end of file
+    ```
+    необходимо сменить вариант перевода строки с CRLF (\r\n) на LF (\n) (версия Windows на версию Linux).
 
 
 ## Лабораторные
