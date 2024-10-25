@@ -8,7 +8,7 @@ bool is_finite_representation(double number, int base)
 {
     if (base < 2)
     {
-        return false; // Некорректное основание системы счисления
+        return false;
     }
     double fractional_part = number;
     // Максимальное количество итераций для предотвращения зацикливания

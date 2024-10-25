@@ -153,6 +153,6 @@ int main()
     else
     {
         printf("Error: Invalid input or calculation error.\n");
-        return 1; // Возвращаем ненулевое значение в случае ошибки
+        return 1;
     }
 }

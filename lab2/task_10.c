@@ -3,7 +3,6 @@
 #include <stdarg.h>
 #include <math.h>
 
-// Function to calculate binomial coefficients
 double binomial_coef(int n, int k)
 {
     if (k > n)
@@ -20,7 +19,6 @@ double binomial_coef(int n, int k)
     return result;
 }
 
-// Function to calculate power
 double power(double base, int exp)
 {
     double result = 1.0;
@@ -31,7 +29,6 @@ double power(double base, int exp)
     return result;
 }
 
-// Main function for polynomial recomposition
 int recompose_polynomial(double epsilon, double a, double **result, int degree, ...)
 {
     if (degree < 0 || result == NULL || epsilon <= 0)
@@ -39,14 +36,12 @@ int recompose_polynomial(double epsilon, double a, double **result, int degree, 
         return -1;
     }
 
-    // Allocate memory for the resulting coefficients
     *result = (double *)calloc(degree + 1, sizeof(double));
     if (*result == NULL)
     {
         return -1;
     }
 
-    // Get the coefficients of the original polynomial
     va_list args;
     va_start(args, degree);
     double *coeffs = (double *)calloc(degree + 1, sizeof(double));
@@ -64,7 +59,6 @@ int recompose_polynomial(double epsilon, double a, double **result, int degree, 
     }
     va_end(args);
 
-    // Calculate new coefficients
     for (int i = 0; i <= degree; i++)
     {
         for (int j = i; j <= degree; j++)
@@ -72,7 +66,6 @@ int recompose_polynomial(double epsilon, double a, double **result, int degree, 
             double term = coeffs[j] * binomial_coef(j, i) * power(-a, j - i);
             (*result)[i] += term;
 
-            // Check for accuracy
             if (fabs(term) < epsilon && j < degree)
             {
                 continue;
@@ -84,7 +77,6 @@ int recompose_polynomial(double epsilon, double a, double **result, int degree, 
     return 0;
 }
 
-// Function to check the correctness of the result
 double evaluate_polynomial(double *coeffs, int degree, double x)
 {
     double result = 0.0;
@@ -102,7 +94,7 @@ int main()
     double a = 2.0;
     int degree = 2;
 
-    // Example: f(x) = 1 + 2x + x^2
+    // f(x) = 1 + 2x + x^2
     if (epsilon <= 0 || degree < 0)
     {
         fprintf(stderr, "Invalid input parameters.\n");
@@ -121,7 +113,6 @@ int main()
             printf("g_%d = %f\n", i, result[i]);
         }
 
-        // Check correctness for several points
         double test_points[] = {0.0, 1.0, 2.0, 3.0};
         int num_points = sizeof(test_points) / sizeof(test_points[0]);
 
@@ -131,7 +122,6 @@ int main()
             double x = test_points[i];
             double original = 1.0 + 2.0 * x + x * x;
 
-            // Calculate the value of the recomposed polynomial
             double recomposed = 0.0;
             for (int j = 0; j <= degree; j++)
             {

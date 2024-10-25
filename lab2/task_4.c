@@ -131,7 +131,7 @@ unsigned long long str_to_base(const char *str, int base)
         if (!isalnum(str[i]))
         {
             fprintf(stderr, "Error: Invalid character in string: %c\n", str[i]);
-            return ULLONG_MAX; // Indicate an error
+            return ULLONG_MAX;
         }
 
         int digit;
@@ -147,7 +147,7 @@ unsigned long long str_to_base(const char *str, int base)
         if (digit >= base)
         {
             fprintf(stderr, "Error: Invalid digit for base %d: %c\n", base, str[i]);
-            return ULLONG_MAX; // Indicate an error
+            return ULLONG_MAX;
         }
         num = num * base + digit;
     }
@@ -165,13 +165,13 @@ void kaprekar_numbers(int base, ...)
     {
         unsigned long long num = str_to_base(str, base);
         if (num == ULLONG_MAX)
-        { // error
+        {
             continue;
         }
 
         unsigned long long sq = num * num;
 
-        char sq_str[100]; // Adjust size as needed
+        char sq_str[100];
         sprintf(sq_str, "%llu", sq);
 
         int sq_len = strlen(sq_str);
@@ -183,7 +183,7 @@ void kaprekar_numbers(int base, ...)
             if (left + right == num && right > 0)
             {
                 printf("Kaprekar number: %s (base %d)\n", str, base);
-                break; // Found a split, no need to check further
+                break;
             }
         }
     }

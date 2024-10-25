@@ -12,7 +12,7 @@ typedef enum
     SUCCESS,
     INVALID_INPUT,
     NEGATIVE_NUMBER,
-    POWER_OVERFLOW // Изменено имя элемента перечисления
+    POWER_OVERFLOW
 } error_code;
 
 // Функция для вычисления среднего геометрического чисел
@@ -79,7 +79,7 @@ error_code power(double *result, double base, int exp)
         if (temp > DBL_MAX / temp)
         {
             fprintf(stderr, "Error: Overflow in power function.\n");
-            return POWER_OVERFLOW; // Использование нового имени
+            return POWER_OVERFLOW;
         }
         *result = temp * temp;
         return SUCCESS;
@@ -95,7 +95,7 @@ error_code power(double *result, double base, int exp)
         if (base > DBL_MAX / temp)
         {
             fprintf(stderr, "Error: Overflow in power function.\n");
-            return POWER_OVERFLOW; // Использование нового имени
+            return POWER_OVERFLOW;
         }
         *result = base * temp;
         return SUCCESS;
