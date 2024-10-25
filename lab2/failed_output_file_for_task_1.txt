@@ -1,0 +1,1 @@
+Usage: ./task_1 <flag> <string> [<unsigned int> <strings...>]
