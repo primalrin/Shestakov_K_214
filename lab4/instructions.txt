@@ -1,0 +1,15 @@
+myvar=15;
+bg=25;
+ccc=bg+11;
+print ccc;
+myvar=ccc;
+print;
+bg = myvar * 2;
+print;
+newVar = 100;
+another = newVar / 10;
+print another;
+mod = 23 % 4;
+print mod;
+div = 100 / 3;
+print div;
