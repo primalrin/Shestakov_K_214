@@ -4,27 +4,24 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-// Преобразование символа в число
 int charToValue(char c)
 {
     if (isdigit(c))
         return c - '0';
     else if (isalpha(c))
-        return toupper(c) - 'A' + 10;
+        return toupper((unsigned char)c) - 'A' + 10;
     return -1;
 }
 
-// Преобразование числа в символ
 char valueToChar(int v)
 {
     if (v >= 0 && v <= 9)
-        return '0' + v;
+        return (char)('0' + v);
     else if (v >= 10 && v < 36)
-        return 'A' + v - 10;
+        return (char)('A' + v - 10);
     return '?';
 }
 
-// Функция сложения двух строковых чисел в столбик в заданной системе счисления
 char *addInColumn(const char *num1, const char *num2, int base)
 {
     if (!num1 || !num2 || base < 2 || base > 36)
@@ -32,11 +29,11 @@ char *addInColumn(const char *num1, const char *num2, int base)
         return NULL;
     }
 
-    int len1 = strlen(num1);
-    int len2 = strlen(num2);
+    int len1 = (int)strlen(num1);
+    int len2 = (int)strlen(num2);
     int maxLen = (len1 > len2) ? len1 : len2;
 
-    char *result = (char *)calloc(maxLen + 2, sizeof(char));
+    char *result = (char *)calloc((size_t)(maxLen + 2), sizeof(char));
     if (!result)
     {
         return NULL;
@@ -63,7 +60,7 @@ char *addInColumn(const char *num1, const char *num2, int base)
 
     if (posRes < maxLen)
     {
-        memmove(result, result + posRes + 1, maxLen - posRes);
+        memmove(result, result + posRes + 1, (size_t)(maxLen - posRes));
         result[maxLen - posRes] = '\0';
     }
     else
@@ -87,7 +84,6 @@ char *addInColumn(const char *num1, const char *num2, int base)
     return result;
 }
 
-// Основная функция суммирования чисел с переменным числом аргументов
 char *sumNumbers(int base, int count, ...)
 {
     if (base < 2 || base > 36 || count < 1)
@@ -115,7 +111,7 @@ char *sumNumbers(int base, int count, ...)
             return NULL;
         }
 
-        for (int j = 0; num[j] != '\0'; ++j)
+        for (size_t j = 0; num[j] != '\0'; ++j)
         {
             if (charToValue(num[j]) == -1 || charToValue(num[j]) >= base)
             {

@@ -2,6 +2,21 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+#include <limits.h>
+
+typedef enum
+{
+    SUCCESS = 0,
+    ERROR_INVALID_ARGUMENTS = -1,
+    ERROR_CALC_STRING_LENGTH = -2,
+    ERROR_MEMORY_ALLOCATION = -3,
+    ERROR_INVALID_SEED = -4,
+    ERROR_REVERSING_STRING = -5,
+    ERROR_UPPERCASING_STRING = -6,
+    ERROR_REARRANGING_STRING = -7,
+    ERROR_CONCATENATING_STRING = -8,
+    ERROR_INVALID_FLAG = -9
+} error_code;
 
 int strcmp(const char *s1, const char *s2)
 {
@@ -13,12 +28,11 @@ int strcmp(const char *s1, const char *s2)
     return *(const unsigned char *)s1 - *(const unsigned char *)s2;
 }
 
-// Функция для подсчета длины строки
 int string_length(const char *str)
 {
     if (!str)
     {
-        return -1; // Код ошибки для NULL строки
+        return ERROR_CALC_STRING_LENGTH;
     }
     int length = 0;
     while (str[length] != '\0')
@@ -28,24 +42,23 @@ int string_length(const char *str)
     return length;
 }
 
-// Функция для реверса строки
 int reverse_string(const char *str, char **reversed_str)
 {
     if (!str || !reversed_str)
     {
-        return -1; // Код ошибки для NULL аргументов
+        return ERROR_INVALID_ARGUMENTS;
     }
     int length = string_length(str);
     if (length < 0)
     {
-        return -2; // Код ошибки, если не удалось вычислить длину
+        return length;
     }
 
-    *reversed_str = (char *)malloc(sizeof(char) * (length + 1));
+    *reversed_str = (char *)malloc(sizeof(char) * ((size_t)length + 1));
     if (!*reversed_str)
     {
         perror("Memory allocation failed");
-        return -3; // Код ошибки выделения памяти
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     for (int i = 0; i < length; i++)
@@ -53,35 +66,34 @@ int reverse_string(const char *str, char **reversed_str)
         (*reversed_str)[i] = str[length - 1 - i];
     }
     (*reversed_str)[length] = '\0';
-    return 0;
+    return SUCCESS;
 }
 
-// Функция для преобразования символов на нечетных позициях в верхний регистр
 int uppercase_odd(const char *str, char **uppercased_str)
 {
     if (!str || !uppercased_str)
     {
-        return -1;
+        return ERROR_INVALID_ARGUMENTS;
     }
 
     int length = string_length(str);
     if (length < 0)
     {
-        return -2; // Код ошибки, если не удалось вычислить длину
+        return length;
     }
 
-    *uppercased_str = (char *)malloc(sizeof(char) * (length + 1));
+    *uppercased_str = (char *)malloc(sizeof(char) * ((size_t)length + 1));
     if (!*uppercased_str)
     {
         perror("Memory allocation failed");
-        return -3;
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     for (int i = 0; i < length; i++)
     {
         if (i % 2 != 0)
         {
-            (*uppercased_str)[i] = toupper(str[i]);
+            (*uppercased_str)[i] = (char)toupper((unsigned char)str[i]);
         }
         else
         {
@@ -89,37 +101,36 @@ int uppercase_odd(const char *str, char **uppercased_str)
         }
     }
     (*uppercased_str)[length] = '\0';
-    return 0;
+    return SUCCESS;
 }
 
-// Функция для перестановки символов в строке
 int rearrange_string(const char *str, char **rearranged_str)
 {
     if (!str || !rearranged_str)
     {
-        return -1;
+        return ERROR_INVALID_ARGUMENTS;
     }
 
     int length = string_length(str);
     if (length < 0)
     {
-        return -2; // Код ошибки, если не удалось вычислить длину
+        return length;
     }
 
-    *rearranged_str = (char *)malloc(sizeof(char) * (length + 1));
+    *rearranged_str = (char *)malloc(sizeof(char) * ((size_t)length + 1));
     if (!*rearranged_str)
     {
         perror("Memory allocation failed");
-        return -3;
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     int digits_index = 0;
     int letters_index = 0;
     int other_index = 0;
 
-    char *digits = (char *)malloc(sizeof(char) * (length + 1));
-    char *letters = (char *)malloc(sizeof(char) * (length + 1));
-    char *other = (char *)malloc(sizeof(char) * (length + 1));
+    char *digits = (char *)malloc(sizeof(char) * ((size_t)length + 1));
+    char *letters = (char *)malloc(sizeof(char) * ((size_t)length + 1));
+    char *other = (char *)malloc(sizeof(char) * ((size_t)length + 1));
 
     if (!digits || !letters || !other)
     {
@@ -128,16 +139,16 @@ int rearrange_string(const char *str, char **rearranged_str)
         free(other);
         free(*rearranged_str);
         perror("Memory allocation failed");
-        return -3; // Код ошибки выделения памяти
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     for (int i = 0; i < length; i++)
     {
-        if (isdigit(str[i]))
+        if (isdigit((unsigned char)str[i]))
         {
             digits[digits_index++] = str[i];
         }
-        else if (isalpha(str[i]))
+        else if (isalpha((unsigned char)str[i]))
         {
             letters[letters_index++] = str[i];
         }
@@ -173,24 +184,23 @@ int rearrange_string(const char *str, char **rearranged_str)
     free(letters);
     free(other);
 
-    return 0;
+    return SUCCESS;
 }
 
-// Функция для конкатенации строк в случайном порядке
 int concatenate_strings(int argc, char *argv[], char **concatenated_str)
 {
     if (argc < 4 || !argv || !concatenated_str)
     {
-        return -1;
+        return ERROR_INVALID_ARGUMENTS;
     }
 
     char *endptr;
-    unsigned long converted_seed = strtoul(argv[2], &endptr, 10); // Seed теперь из argv[2]
+    unsigned long converted_seed = strtoul(argv[2], &endptr, 10);
 
     if (*endptr != '\0' || converted_seed > UINT_MAX)
     {
         fprintf(stderr, "Invalid seed value: %s\n", argv[2]);
-        return -4;
+        return ERROR_INVALID_SEED;
     }
 
     unsigned int local_seed = (unsigned int)converted_seed;
@@ -202,25 +212,25 @@ int concatenate_strings(int argc, char *argv[], char **concatenated_str)
         int len_res = string_length(argv[i]);
         if (len_res < 0)
         {
-            return -2;
+            return len_res;
         }
         total_length += len_res;
     }
 
-    *concatenated_str = (char *)malloc(sizeof(char) * (total_length + 1));
+    *concatenated_str = (char *)malloc(sizeof(char) * ((size_t)total_length + 1));
     if (!*concatenated_str)
     {
         perror("Memory allocation failed");
-        return -3;
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     int current_index = 0;
-    int *indices = (int *)malloc(sizeof(int) * (argc - 3));
+    int *indices = (int *)malloc(sizeof(int) * ((size_t)(argc - 3)));
     if (!indices)
     {
         free(*concatenated_str);
         perror("Failed to allocate memory for indices");
-        return -3;
+        return ERROR_MEMORY_ALLOCATION;
     }
 
     for (int i = 0; i < argc - 3; i++)
@@ -245,7 +255,7 @@ int concatenate_strings(int argc, char *argv[], char **concatenated_str)
         {
             free(indices);
             free(*concatenated_str);
-            return -2;
+            return str_len;
         }
         for (int j = 0; j < str_len; j++)
         {
@@ -255,7 +265,7 @@ int concatenate_strings(int argc, char *argv[], char **concatenated_str)
 
     (*concatenated_str)[current_index] = '\0';
     free(indices);
-    return 0;
+    return SUCCESS;
 }
 
 int main(int argc, char *argv[])
@@ -263,11 +273,11 @@ int main(int argc, char *argv[])
     if (argc < 3)
     {
         fprintf(stderr, "Usage: %s <flag> <string> [<unsigned int> <strings...>]\n", argv[0]);
-        return -1;
+        return ERROR_INVALID_ARGUMENTS;
     }
 
     char *result_str = NULL;
-    int result_code = 0;
+    error_code result_code = SUCCESS;
 
     if (strcmp(argv[1], "-l") == 0)
     {
@@ -275,37 +285,37 @@ int main(int argc, char *argv[])
         if (length < 0)
         {
             fprintf(stderr, "Error calculating string length.\n");
-            return -2;
+            return length;
         }
         printf("String length: %d\n", length);
     }
     else if (strcmp(argv[1], "-r") == 0)
     {
         result_code = reverse_string(argv[2], &result_str);
-        if (result_code != 0)
+        if (result_code != SUCCESS)
         {
             fprintf(stderr, "Error reversing string.\n");
-            return -3;
+            return result_code;
         }
         printf("Reversed string: %s\n", result_str);
     }
     else if (strcmp(argv[1], "-u") == 0)
     {
         result_code = uppercase_odd(argv[2], &result_str);
-        if (result_code != 0)
+        if (result_code != SUCCESS)
         {
             fprintf(stderr, "Error uppercasing odd characters.\n");
-            return -4;
+            return result_code;
         }
         printf("Uppercased odd string: %s\n", result_str);
     }
     else if (strcmp(argv[1], "-n") == 0)
     {
         result_code = rearrange_string(argv[2], &result_str);
-        if (result_code != 0)
+        if (result_code != SUCCESS)
         {
             fprintf(stderr, "Error rearranging string.\n");
-            return -5;
+            return result_code;
         }
         printf("Rearranged string: %s\n", result_str);
     }
@@ -314,34 +324,32 @@ int main(int argc, char *argv[])
         if (argc < 4)
         {
             fprintf(stderr, "Not enough arguments for -c flag.\n");
-            return -6;
+            return ERROR_INVALID_ARGUMENTS;
         }
 
         char *concatenated_str = NULL;
-        int result_code = concatenate_strings(argc, argv, &concatenated_str);
+        result_code = concatenate_strings(argc, argv, &concatenated_str);
 
-        if (result_code != 0)
+        if (result_code != SUCCESS)
         {
             fprintf(stderr, "Error concatenating strings.\n");
-            return -8;
+            return result_code;
         }
-        printf("Concatenated string: %s\n", concatenated_str); // Исправлено: вывод concatenated_str
-        free(concatenated_str);                                // Освобождаем память
+        printf("Concatenated string: %s\n", concatenated_str);
+        free(concatenated_str);
     }
     else
     {
         fprintf(stderr, "Invalid flag.\n");
-        return -9;
+        return ERROR_INVALID_FLAG;
     }
 
     free(result_str);
-    return 0;
+    return SUCCESS;
 }
 
-// gcc ex1.c -o ex1
-
-//./ex1 -l "Hello, world!"
-//./ex1 -r "Reverse me"
-//./ex1 -u "Make me uppercase"
-//./ex1 -n "DEF?123abc"
-//./ex1 -c 12345 "String 1" "String 2" "String 3" "String 4"
+//./task_1 -l "Hello, world!"
+//./task_1 -r "Reverse me"
+//./task_1 -u "Make me uppercase"
+//./task_1 -n "DEF?123abc"
+//./task_1 -c 12345 "String 1" "String 2" "String 3" "String 4"

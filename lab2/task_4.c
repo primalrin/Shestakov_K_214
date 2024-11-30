@@ -4,11 +4,11 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#include <limits.h>
 
-// Функция для определения выпуклости многоугольника
 int is_convex(int n, ...)
 {
-    // Проверка на минимальное количество вершин
+
     if (n < 3)
     {
         fprintf(stderr, "Error: Less than three vertices provided.\n");
@@ -18,9 +18,8 @@ int is_convex(int n, ...)
     va_list args;
     va_start(args, n);
 
-    // Выделение памяти для координат
-    double *x_coords = (double *)malloc(n * sizeof(double));
-    double *y_coords = (double *)malloc(n * sizeof(double));
+    double *x_coords = (double *)malloc((size_t)n * sizeof(double));
+    double *y_coords = (double *)malloc((size_t)n * sizeof(double));
 
     if (x_coords == NULL || y_coords == NULL)
     {
@@ -33,7 +32,6 @@ int is_convex(int n, ...)
         return -1;
     }
 
-    // Считывание координат из аргументов
     for (int i = 0; i < n; i++)
     {
         x_coords[i] = va_arg(args, double);
@@ -42,7 +40,6 @@ int is_convex(int n, ...)
 
     va_end(args);
 
-    // Находим самую левую нижнюю точку
     int leftmost = 0;
     for (int i = 1; i < n; i++)
     {
@@ -53,7 +50,6 @@ int is_convex(int n, ...)
         }
     }
 
-    // Проверяем каждый угол многоугольника
     int negative = 0, positive = 0;
 
     for (int i = 0; i < n; i++)
@@ -67,17 +63,15 @@ int is_convex(int n, ...)
         double dx2 = x_coords[next_next] - x_coords[next];
         double dy2 = y_coords[next_next] - y_coords[next];
 
-        // Вычисляем ориентацию трех последовательных точек
         double cross = dx1 * dy2 - dy1 * dx2;
 
         if (fabs(cross) > 1e-10)
-        { // Игнорируем почти коллинеарные точки
+        {
             if (cross > 0)
                 positive++;
             else
                 negative++;
 
-            // Если есть углы разных знаков, многоугольник не выпуклый
             if (positive > 0 && negative > 0)
             {
                 free(x_coords);
@@ -90,7 +84,6 @@ int is_convex(int n, ...)
     free(x_coords);
     free(y_coords);
 
-    // Если все точки коллинеарны
     if (positive == 0 && negative == 0)
     {
         return -1;
@@ -99,7 +92,6 @@ int is_convex(int n, ...)
     return 1;
 }
 
-// Функция для вычисления значения многочлена
 double polynomial_value(double x, int n, ...)
 {
     if (n < 0)
@@ -122,7 +114,6 @@ double polynomial_value(double x, int n, ...)
     return result;
 }
 
-// Функция для преобразования строки в число в заданной системе счисления
 unsigned long long str_to_base(const char *str, int base)
 {
     unsigned long long num = 0;
@@ -149,22 +140,68 @@ unsigned long long str_to_base(const char *str, int base)
             fprintf(stderr, "Error: Invalid digit for base %d: %c\n", base, str[i]);
             return ULLONG_MAX;
         }
-        num = num * base + digit;
+        if (base > 0 && num > ULLONG_MAX / (unsigned long long)base - (unsigned long long)digit)
+        {
+            fprintf(stderr, "Error: Overflow detected for base %d\n", base);
+            return ULLONG_MAX;
+        }
+        num = num * (unsigned long long)base + (unsigned long long)digit;
     }
     return num;
 }
 
-// Функция для проверки чисел Капрекара
 void kaprekar_numbers(int base, ...)
 {
     va_list args;
     va_start(args, base);
 
+    if (base < 2)
+    {
+        fprintf(stderr, "Error: Invalid base %d, must be >= 2\n", base);
+        va_end(args);
+        return;
+    }
+
     char *str;
     while ((str = va_arg(args, char *)) != NULL)
     {
-        unsigned long long num = str_to_base(str, base);
-        if (num == ULLONG_MAX)
+        unsigned long long num = 0;
+        int i = 0;
+        for (; str[i] != '\0'; i++)
+        {
+            if (!isalnum(str[i]))
+            {
+                fprintf(stderr, "Error: Invalid character in string: %c\n", str[i]);
+                num = ULLONG_MAX;
+                break;
+            }
+
+            int digit;
+            if (isdigit(str[i]))
+            {
+                digit = str[i] - '0';
+            }
+            else
+            {
+                digit = toupper(str[i]) - 'A' + 10;
+            }
+
+            if (digit >= base)
+            {
+                fprintf(stderr, "Error: Invalid digit for base %d: %c\n", base, str[i]);
+                num = ULLONG_MAX;
+                break;
+            }
+            if (num > ULLONG_MAX / (unsigned long long)base || (ULLONG_MAX - (unsigned long long)digit) / (unsigned long long)base < num)
+            {
+                fprintf(stderr, "Error: Overflow detected for base %d\n", base);
+                num = ULLONG_MAX;
+                break;
+            }
+            num = num * (unsigned long long)base + (unsigned long long)digit;
+        }
+
+        if (num == ULLONG_MAX || num == 0)
         {
             continue;
         }
@@ -174,11 +211,26 @@ void kaprekar_numbers(int base, ...)
         char sq_str[100];
         sprintf(sq_str, "%llu", sq);
 
-        int sq_len = strlen(sq_str);
-        for (int i = 1; i < sq_len; i++)
+        size_t sq_len = strlen(sq_str);
+        for (size_t i = 1; i < sq_len; i++)
         {
-            unsigned long long right = sq % (unsigned long long)pow(base, i);
-            unsigned long long left = sq / (unsigned long long)pow(base, i);
+            unsigned long long right_divisor = 1;
+            for (size_t j = 0; j < i; j++)
+            {
+                if (right_divisor > ULLONG_MAX / (unsigned long long)base)
+                {
+                    fprintf(stderr, "Error: Overflow detected for base %d, power %zu\n", base, i);
+                    right_divisor = 0;
+                    break;
+                }
+                right_divisor *= (unsigned long long)base;
+            }
+            if (right_divisor == 0)
+            {
+                continue;
+            }
+            unsigned long long right = sq % right_divisor;
+            unsigned long long left = sq / right_divisor;
 
             if (left + right == num && right > 0)
             {
@@ -192,48 +244,47 @@ void kaprekar_numbers(int base, ...)
 
 int main()
 {
-    // Пример использования is_convex
-    // Тест 1: Выпуклый четырехугольник (квадрат)
+
     printf("Square: %d\n", is_convex(4,
                                      0.0, 0.0,
                                      2.0, 0.0,
                                      2.0, 2.0,
                                      0.0, 2.0));
 
-    // Тест 2: Невыпуклый четырехугольник (вогнутый)
-    printf("Concave quadrilateral: %d\n", is_convex(4,
-                                                    0.0, 0.0,
-                                                    2.0, 0.0,
-                                                    1.0, 0.5, // Эта точка делает фигуру невыпуклой
-                                                    0.0, 2.0));
+    // Test 2: Quadrilateral
+    printf("Quadrilateral: %d\n", is_convex(4,
+                                            0.0, 0.0,
+                                            2.0, 0.0,
+                                            1.0, 0.5,
+                                            0.0, 2.0));
 
-    // Тест 3: Треугольник
+    // Test 3: Triangle
     printf("Triangle: %d\n", is_convex(3,
                                        0.0, 0.0,
                                        2.0, 0.0,
                                        1.0, 2.0));
 
-    // Тест 4: Пятиугольник с вогнутостью
-    printf("Concave pentagon: %d\n", is_convex(5,
-                                               0.0, 0.0,
-                                               2.0, 0.0,
-                                               2.0, 2.0,
-                                               1.0, 1.0, // Эта точка создает вогнутость
-                                               0.0, 2.0));
+    // Test 4: Pentagon with concavity
+    printf("Pentagon: %d\n", is_convex(5,
+                                       0.0, 0.0,
+                                       2.0, 0.0,
+                                       2.0, 2.0,
+                                       1.0, 1.0,
+                                       0.0, 2.0));
 
-    // Тест 5: Коллинеарные точки
+    // Test 5: Collinear points
     printf("Collinear points: %d\n", is_convex(3,
                                                0.0, 0.0,
                                                1.0, 1.0,
                                                2.0, 2.0));
 
-    // Пример использования polynomial_value
     double value = polynomial_value(2, 2, 1.0, 2.0, 3.0);
     printf("Polynomial value: %f\n", value);
 
-    // Пример использования kaprekar_numbers
     kaprekar_numbers(10, "1", "45", "9", "297", NULL);
     kaprekar_numbers(17, "A", "10", NULL);
+    kaprekar_numbers(1, "1", NULL);
+    kaprekar_numbers(10, "0", NULL);
 
     return 0;
 }

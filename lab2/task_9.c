@@ -2,8 +2,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <math.h>
+#include <float.h>
+#include <limits.h>
 
-// Проверяет, имеет ли число конечное представление в системе счисления с заданным основанием
 bool is_finite_representation(double number, int base)
 {
     if (base < 2)
@@ -11,12 +12,15 @@ bool is_finite_representation(double number, int base)
         return false;
     }
     double fractional_part = number;
-    // Максимальное количество итераций для предотвращения зацикливания
     const int MAX_ITERATIONS = 1000;
     int iterations = 0;
 
     while (fractional_part > 1e-15 && iterations < MAX_ITERATIONS)
     {
+        if (fabs(fractional_part) > DBL_MAX / base)
+        {
+            return false;
+        }
         fractional_part *= base;
         int integer_part = (int)fractional_part;
         fractional_part -= integer_part;
@@ -26,7 +30,6 @@ bool is_finite_representation(double number, int base)
     return fractional_part < 1e-15;
 }
 
-// Проверяет числа на конечное представление в заданной системе счисления
 int check_numbers(int base, int count, ...)
 {
     if (base < 2)
@@ -34,9 +37,15 @@ int check_numbers(int base, int count, ...)
         printf("Error: Base must be greater than or equal to 2.\n");
         return 1;
     }
-    if (count < 0)
+    if (count <= 0)
     {
         printf("Error: Invalid count of numbers.\n");
+        return 1;
+    }
+
+    if (base > INT_MAX / 2)
+    {
+        printf("Error: Base is too large to prevent potential overflow.\n");
         return 1;
     }
 
@@ -78,6 +87,18 @@ int main()
 
     printf("\nTest 3: Ternary system (base 3)\n");
     check_numbers(3, 2, 1.0 / 3.0, 0.2);
+
+    printf("\nTest 4: Invalid base\n");
+    check_numbers(1, 2, 0.5, 0.25);
+
+    printf("\nTest 5: Invalid count\n");
+    check_numbers(2, 0, 0.5, 0.25);
+
+    printf("\nTest 6: Invalid number range\n");
+    check_numbers(2, 2, 1.5, 0.25);
+
+    printf("\nTest 7: Large base\n");
+    check_numbers(INT_MAX / 2 + 1, 2, 0.5, 0.25);
 
     return 0;
 }

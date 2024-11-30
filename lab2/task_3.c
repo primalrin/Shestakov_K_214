@@ -4,7 +4,6 @@
 #include <ctype.h>
 #include <string.h>
 
-// Функция сравнения подстрок без учета регистра
 int string_compare(const char *substring, const char *str)
 {
     size_t sub_len = strlen(substring);
@@ -26,7 +25,6 @@ int string_compare(const char *substring, const char *str)
     return 1;
 }
 
-// Функция поиска подстроки в файле
 int search_substring_in_file(const char *substring, const char *filepath)
 {
     if (!substring || strlen(substring) == 0)
@@ -55,8 +53,10 @@ int search_substring_in_file(const char *substring, const char *filepath)
             if (string_compare(substring, line_ptr))
             {
                 printf("File: %s, Line: %d, Character: %d\n", filepath, line_number, char_number);
-                line_ptr += strlen(substring) - 1;
-                char_number += strlen(substring) - 1;
+
+                int sub_len_int = (int)strlen(substring);
+                line_ptr += sub_len_int - 1;
+                char_number += sub_len_int - 1;
             }
             line_ptr++;
             char_number++;
@@ -72,7 +72,6 @@ int search_substring_in_file(const char *substring, const char *filepath)
     return 0;
 }
 
-// Функция с переменным числом аргументов
 int search_substring(const char *substring, ...)
 {
     if (!substring)
@@ -93,7 +92,7 @@ int search_substring(const char *substring, ...)
             va_end(files);
             return -1;
         }
-        if (search_substring_in_file(substring, filepath))
+        if (search_substring_in_file(substring, filepath) == -1)
         {
             va_end(files);
             return -1;
@@ -106,7 +105,7 @@ int search_substring(const char *substring, ...)
 
 int main()
 {
-    // Пример использования
+
     if (search_substring("test", "file1.txt", "file2.txt", "file3.txt", NULL) != 0)
     {
         fprintf(stderr, "Error occurred during substring search.\n");

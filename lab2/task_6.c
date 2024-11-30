@@ -3,8 +3,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
-// Коды ошибок
 typedef enum
 {
     SUCCESS = 0,
@@ -14,7 +14,6 @@ typedef enum
     ERROR_INVALID_FORMAT = -4
 } ErrorCode;
 
-// Вспомогательные функции для работы с римскими числами
 ErrorCode roman_to_decimal(const char *roman, int *result)
 {
     if (!roman || !result || !*roman)
@@ -34,13 +33,13 @@ ErrorCode roman_to_decimal(const char *roman, int *result)
     *result = 0;
     int prev_value = 0;
 
-    for (int i = strlen(roman) - 1; i >= 0; i--)
+    for (int i = (int)strlen(roman) - 1; i >= 0; i--)
     {
-        if (!values[roman[i]])
+        if (!values[(unsigned char)roman[i]])
         {
             return ERROR_INVALID_CHAR;
         }
-        int current_value = values[roman[i]];
+        int current_value = values[(unsigned char)roman[i]];
         if (current_value >= prev_value)
         {
             *result += current_value;
@@ -55,7 +54,6 @@ ErrorCode roman_to_decimal(const char *roman, int *result)
     return SUCCESS;
 }
 
-// Функция для получения n-ного числа Фибоначчи
 ErrorCode fib(int n, unsigned int *result)
 {
     if (!result)
@@ -68,7 +66,7 @@ ErrorCode fib(int n, unsigned int *result)
     }
     if (n <= 1)
     {
-        *result = n;
+        *result = (unsigned int)n;
         return SUCCESS;
     }
 
@@ -77,7 +75,7 @@ ErrorCode fib(int n, unsigned int *result)
     {
         unsigned int next = curr + prev;
         if (next < curr)
-        { // Проверка на переполнение
+        {
             return ERROR_OVERFLOW;
         }
         prev = curr;
@@ -87,7 +85,6 @@ ErrorCode fib(int n, unsigned int *result)
     return SUCCESS;
 }
 
-// Функция для преобразования цекендорфова представления в число
 ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
 {
     if (!zeck || !result || !*zeck)
@@ -95,9 +92,9 @@ ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
         return ERROR_EMPTY_INPUT;
     }
 
-    int len = strlen(zeck);
+    int len = (int)strlen(zeck);
     if (zeck[len - 1] != '1')
-    { // Проверка на завершающую единицу
+    {
         return ERROR_INVALID_FORMAT;
     }
 
@@ -119,12 +116,12 @@ ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
                 return err;
             }
 
-            unsigned int new_result = *result + fib_value;
-            if (new_result < *result)
-            { // Проверка на переполнение
+            if (UINT_MAX - fib_value < *result)
+            {
                 return ERROR_OVERFLOW;
             }
-            *result = new_result;
+
+            *result += fib_value;
         }
         fib_index++;
     }
@@ -132,7 +129,6 @@ ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
     return SUCCESS;
 }
 
-// Функция для преобразования строки в число с заданным основанием
 ErrorCode string_to_int_base(const char *str, int base, int uppercase, int *result)
 {
     if (!str || !result || !*str)
@@ -166,7 +162,7 @@ ErrorCode string_to_int_base(const char *str, int base, int uppercase, int *resu
         }
         else
         {
-            char c = uppercase ? toupper(*str) : tolower(*str);
+            int c = uppercase ? toupper((unsigned char)*str) : tolower((unsigned char)*str);
             if (!isalpha(c))
             {
                 return ERROR_INVALID_CHAR;
@@ -179,7 +175,6 @@ ErrorCode string_to_int_base(const char *str, int base, int uppercase, int *resu
             return ERROR_INVALID_CHAR;
         }
 
-        // Проверка на переполнение перед вычислением
         if (*result > INT_MAX / base ||
             (*result == INT_MAX / base && digit > INT_MAX % base))
         {
@@ -194,7 +189,6 @@ ErrorCode string_to_int_base(const char *str, int base, int uppercase, int *resu
     return SUCCESS;
 }
 
-// Основная функция для чтения форматированного ввода
 int read_formatted(void *stream, const char *format, va_list args, int is_file)
 {
     if (!stream || !format)
@@ -219,10 +213,10 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
 
                 while (1)
                 {
-                    int c = is_file ? fgetc((FILE *)stream) : *(char *)((const char *)stream + buffer_pos);
-                    if (!c || !strchr("IVXLCDM", c))
+                    int c = is_file ? fgetc((FILE *)stream) : *(unsigned char *)((const char *)stream + buffer_pos);
+                    if (c == EOF || !strchr("IVXLCDM", c))
                         break;
-                    buffer[buffer_pos++] = c;
+                    buffer[buffer_pos++] = (char)c;
                 }
                 if (buffer_pos == 0)
                     continue;
@@ -241,10 +235,10 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
 
                 while (1)
                 {
-                    int c = is_file ? fgetc((FILE *)stream) : *(char *)((const char *)stream + buffer_pos);
-                    if (!c || (c != '0' && c != '1'))
+                    int c = is_file ? fgetc((FILE *)stream) : *(unsigned char *)((const char *)stream + buffer_pos);
+                    if (c == EOF || (c != '0' && c != '1'))
                         break;
-                    buffer[buffer_pos++] = c;
+                    buffer[buffer_pos++] = (char)c;
                 }
                 if (buffer_pos == 0)
                     continue;
@@ -265,10 +259,10 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
 
                 while (1)
                 {
-                    int c = is_file ? fgetc((FILE *)stream) : *(char *)((const char *)stream + buffer_pos);
-                    if (!isalnum(c))
+                    int c = is_file ? fgetc((FILE *)stream) : *(unsigned char *)((const char *)stream + buffer_pos);
+                    if (c == EOF || !isalnum(c))
                         break;
-                    buffer[buffer_pos++] = c;
+                    buffer[buffer_pos++] = (char)c;
                 }
                 if (buffer_pos == 0)
                     continue;
@@ -333,33 +327,65 @@ int oversscanf(const char *str, const char *format, ...)
 
 int main()
 {
-    // Тест римских чисел
+
     printf("Testing Roman numerals:\n");
     FILE *fp = fopen("test.txt", "w");
+    if (!fp)
+    {
+        perror("Error opening file");
+        return 1;
+    }
     fprintf(fp, "XIV");
     fclose(fp);
 
     fp = fopen("test.txt", "r");
+    if (!fp)
+    {
+        perror("Error opening file");
+        return 1;
+    }
     int roman_number;
-    overfscanf(fp, "%Ro", &roman_number);
-    printf("Roman number XIV = %d\n", roman_number);
+    if (overfscanf(fp, "%Ro", &roman_number) == 1)
+    {
+        printf("Roman number XIV = %d\n", roman_number);
+    }
+    else
+    {
+        printf("Failed to read Roman number.\n");
+    }
     fclose(fp);
 
-    // Тест цекендорфова представления
     printf("\nTesting Zeckendorf representation:\n");
     unsigned int zeck_number;
-    oversscanf("10011", "%Zr", &zeck_number);
-    printf("Zeckendorf number 10011 = %u\n", zeck_number);
+    if (oversscanf("10011", "%Zr", &zeck_number) == 1)
+    {
+        printf("Zeckendorf number 10011 = %u\n", zeck_number);
+    }
+    else
+    {
+        printf("Failed to read Zeckendorf number.\n");
+    }
 
-    // Тест произвольных систем счисления
     printf("\nTesting custom base numbers:\n");
     int base_number;
     int base = 16;
-    oversscanf("ff", "%Cv", &base_number, base);
-    printf("Number ff in base %d = %d\n", base, base_number);
+    if (oversscanf("ff", "%Cv", &base_number, base) == 1)
+    {
+        printf("Number ff in base %d = %d\n", base, base_number);
+    }
+    else
+    {
+        printf("Failed to read custom base number (lowercase).\n");
+    }
 
-    oversscanf("FF", "%CV", &base_number, base);
-    printf("Number FF in base %d = %d\n", base, base_number);
+    if (oversscanf("FF", "%CV", &base_number, base) == 1)
+    {
+        printf("Number FF in base %d = %d\n", base, base_number);
+    }
+    else
+    {
+        printf("Failed to read custom base number (uppercase).\n");
+    }
 
     return 0;
 }
