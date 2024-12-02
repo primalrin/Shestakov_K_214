@@ -205,7 +205,10 @@ void kaprekar_numbers(int base, ...)
         {
             continue;
         }
-
+        if (num == 1)
+        {
+            printf("Kaprekar number: %s (base %d)\n", str, base);
+        }
         unsigned long long sq = num * num;
 
         char sq_str[100];
