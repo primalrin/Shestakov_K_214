@@ -3,7 +3,6 @@
 #include <stdarg.h>
 #include <math.h>
 #include <limits.h>
-#include <errno.h>
 #include <float.h>
 
 // Перечисление для кодов ошибок
