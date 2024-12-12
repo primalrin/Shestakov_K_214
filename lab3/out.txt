@@ -1,5 +1,15 @@
-5 Elena Sidorova 950.20
-10 Ivan Ivanov 1000.50
-18 Olga Ivanova 1050.80
-12 Petr Sidorov 1100.00
-25 Anna Petrova 1200.75
+
+Tree #1 for expression: A (B (E (G, T, R (W, Z)), F (L, M)), C)
+
+A
+| B
+| |  E
+| |  |  G
+| |  |  T
+| |  |R
+| |  || W
+| |  ||Z
+| |F
+| || L
+| ||M
+|C

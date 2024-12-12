@@ -5,10 +5,10 @@
 
 enum status_code
 {
-    STATUS_OK,           // Успех
-    STATUS_ERROR_NAN,    // Не является числом
-    STATUS_ERROR_ARGS,   // Ошибка при вводе аргументов
-    STATUS_ERROR_MEMORY, // Ошибка выделения памяти
+    STATUS_OK,
+    STATUS_ERROR_NAN,
+    STATUS_ERROR_ARGS,
+    STATUS_ERROR_MEMORY,
 };
 
 void print_error(enum status_code code)
@@ -55,10 +55,10 @@ double calc_derivative(int i, double a, int n, const double *coeffs)
     return result;
 }
 
-unsigned long long int factorial(int n)
+unsigned long long int factorial(unsigned int n)
 {
     unsigned long long int res = 1;
-    for (int i = 1; i <= n; ++i)
+    for (unsigned int i = 1; i <= n; ++i)
     {
         res *= i;
     }
@@ -72,7 +72,7 @@ enum status_code decompose_polynomial(double epsilon, double a, double **result_
         return STATUS_ERROR_ARGS;
     }
 
-    double *coeffs = (double *)malloc((n + 1) * sizeof(double));
+    double *coeffs = (double *)malloc(sizeof(double) * (unsigned long long int)(n + 1));
     if (coeffs == NULL)
     {
         return STATUS_ERROR_MEMORY;
@@ -92,7 +92,7 @@ enum status_code decompose_polynomial(double epsilon, double a, double **result_
     }
     va_end(args);
 
-    *result_coeffs = (double *)malloc((n + 1) * sizeof(double));
+    *result_coeffs = (double *)malloc(sizeof(double) * (unsigned long long int)(n + 1));
     if (*result_coeffs == NULL)
     {
         free(coeffs);
@@ -101,7 +101,7 @@ enum status_code decompose_polynomial(double epsilon, double a, double **result_
 
     for (int i = 0; i <= n; i++)
     {
-        (*result_coeffs)[i] = calc_derivative(i, a, n, coeffs) / factorial(i);
+        (*result_coeffs)[i] = calc_derivative(i, a, n, coeffs) / (double)factorial((unsigned int)i);
 
         if (fabs((*result_coeffs)[i]) < epsilon)
         {

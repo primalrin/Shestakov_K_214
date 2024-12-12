@@ -8,9 +8,9 @@
 
 typedef struct Node
 {
-    char value;                          // Значение узла
-    struct Node *children[MAX_CHILDREN]; // Массив указателей на дочерние узлы
-    int child_count;                     // Количество дочерних узлов
+    char value;
+    struct Node *children[MAX_CHILDREN];
+    int child_count;
 } Node;
 
 Node *createNode(char value)

@@ -25,7 +25,6 @@ int is_alpha_string(const char *str)
     return 1;
 }
 
-// Функция для qsort (по возрастанию)
 int compare_asc(const void *a, const void *b)
 {
     const Employee *emp1 = (const Employee *)a;
@@ -47,7 +46,6 @@ int compare_asc(const void *a, const void *b)
     return emp1->id - emp2->id;
 }
 
-// Функция для qsort (по убыванию)
 int compare_desc(const void *a, const void *b)
 {
     return -compare_asc(a, b);
