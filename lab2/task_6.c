@@ -93,15 +93,11 @@ ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
     }
 
     int len = (int)strlen(zeck);
-    if (zeck[len - 1] != '1')
-    {
-        return ERROR_INVALID_FORMAT;
-    }
-
+    
     *result = 0;
-    int fib_index = 0;
+    int fib_index = 2; 
 
-    for (int i = 0; i < len - 1; i++)
+    for (int i = len - 2; i >= 0; i--)
     {
         if (zeck[i] != '0' && zeck[i] != '1')
         {
@@ -110,7 +106,7 @@ ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
         if (zeck[i] == '1')
         {
             unsigned int fib_value;
-            ErrorCode err = fib(fib_index + 2, &fib_value);
+            ErrorCode err = fib(fib_index, &fib_value);
             if (err != SUCCESS)
             {
                 return err;
@@ -125,6 +121,8 @@ ErrorCode zeckendorf_to_decimal(const char *zeck, unsigned int *result)
         }
         fib_index++;
     }
+    
+    if (zeck[len -1] != '1') return ERROR_INVALID_FORMAT;
 
     return SUCCESS;
 }
@@ -137,7 +135,7 @@ ErrorCode string_to_int_base(const char *str, int base, int uppercase, int *resu
     }
     if (base < 2 || base > 36)
     {
-        base = 10;
+        return ERROR_INVALID_FORMAT;
     }
 
     *result = 0;
@@ -199,6 +197,7 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
     int items_read = 0;
     char buffer[1024];
     int buffer_pos = 0;
+    int error_code = SUCCESS;
 
     while (*format)
     {
@@ -218,13 +217,27 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
                         break;
                     buffer[buffer_pos++] = (char)c;
                 }
-                if (buffer_pos == 0)
+
+                if (is_file) {
+                    for (int i = buffer_pos - 1; i >= 0; i--) {
+                        ungetc(buffer[i], (FILE *)stream);
+                    }
+                }
+
+                if (buffer_pos == 0) {
+                    format += 2;
                     continue;
+                }
 
                 buffer[buffer_pos] = '\0';
-                if (roman_to_decimal(buffer, target) == SUCCESS)
+                error_code = roman_to_decimal(buffer, target);
+                if (error_code == SUCCESS)
                 {
                     items_read++;
+                }
+                else if (error_code == ERROR_INVALID_CHAR)
+                {
+                    return error_code;
                 }
                 format += 2;
             }
@@ -240,13 +253,29 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
                         break;
                     buffer[buffer_pos++] = (char)c;
                 }
-                if (buffer_pos == 0)
-                    continue;
+                
+                if (is_file) {
+                    for (int i = buffer_pos - 1; i >= 0; i--) {
+                        ungetc(buffer[i], (FILE *)stream);
+                    }
+                }
 
+                if (buffer_pos == 0) {
+                    format += 2;
+                    continue;
+                }
+
+                buffer[buffer_pos++] = '1';
                 buffer[buffer_pos] = '\0';
-                if (zeckendorf_to_decimal(buffer, target) == SUCCESS)
+
+                error_code = zeckendorf_to_decimal(buffer, target);
+                if (error_code == SUCCESS)
                 {
                     items_read++;
+                }
+                else if (error_code == ERROR_INVALID_CHAR || error_code == ERROR_INVALID_FORMAT)
+                {
+                    return error_code;
                 }
                 format += 2;
             }
@@ -254,6 +283,11 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
             {
                 int *target = va_arg(args, int *);
                 int base = va_arg(args, int);
+
+                if (base < 2 || base > 36) {
+                    return ERROR_INVALID_FORMAT;
+                }
+
                 buffer_pos = 0;
                 int is_uppercase = (format[1] == 'V');
 
@@ -264,13 +298,27 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
                         break;
                     buffer[buffer_pos++] = (char)c;
                 }
-                if (buffer_pos == 0)
+
+                if (is_file) {
+                    for (int i = buffer_pos - 1; i >= 0; i--) {
+                        ungetc(buffer[i], (FILE *)stream);
+                    }
+                }
+
+                if (buffer_pos == 0) {
+                    format += 2;
                     continue;
+                }
 
                 buffer[buffer_pos] = '\0';
-                if (string_to_int_base(buffer, base, is_uppercase, target) == SUCCESS)
+                error_code = string_to_int_base(buffer, base, is_uppercase, target);
+                if (error_code == SUCCESS)
                 {
                     items_read++;
+                }
+                else if (error_code == ERROR_INVALID_CHAR)
+                {
+                    return error_code;
                 }
                 format += 2;
             }
@@ -284,6 +332,7 @@ int read_formatted(void *stream, const char *format, va_list args, int is_file)
                 else
                 {
                     items_read += sscanf((char *)stream, fmt, va_arg(args, void *));
+                    
                 }
                 format++;
             }
@@ -357,7 +406,7 @@ int main()
 
     printf("\nTesting Zeckendorf representation:\n");
     unsigned int zeck_number;
-    if (oversscanf("10011", "%Zr", &zeck_number) == 1)
+    if (oversscanf("1001", "%Zr", &zeck_number) == 1)
     {
         printf("Zeckendorf number 10011 = %u\n", zeck_number);
     }
@@ -366,7 +415,7 @@ int main()
         printf("Failed to read Zeckendorf number.\n");
     }
 
-    printf("\nTesting custom base numbers:\n");
+    printf("\nTesting base numbers:\n");
     int base_number;
     int base = 16;
     if (oversscanf("ff", "%Cv", &base_number, base) == 1)
@@ -375,7 +424,7 @@ int main()
     }
     else
     {
-        printf("Failed to read custom base number (lowercase).\n");
+        printf("Failed to read base number (lowercase).\n");
     }
 
     if (oversscanf("FF", "%CV", &base_number, base) == 1)
@@ -384,7 +433,17 @@ int main()
     }
     else
     {
-        printf("Failed to read custom base number (uppercase).\n");
+        printf("Failed to read base number (uppercase).\n");
+    }
+
+    printf("\nTesting invalid base:\n");
+    if (oversscanf("123", "%Cv", &base_number, 2) == ERROR_INVALID_FORMAT)
+    {
+        printf("Invalid base 2.\n");
+    }
+    else
+    {
+        printf("Failed to detect invalid base.\n");
     }
 
     return 0;
