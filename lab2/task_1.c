@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
-#include <errno.h>
 
 typedef enum
 {
@@ -212,7 +211,6 @@ error_code validate_seed(const char *seed_str, unsigned int *seed)
         return ERROR_INVALID_ARGUMENTS;
     }
     char *endptr;
-    errno = 0;
     unsigned long converted_seed = strtoul(seed_str, &endptr, 10);
 
     if (*endptr != '\0')
@@ -221,7 +219,7 @@ error_code validate_seed(const char *seed_str, unsigned int *seed)
         return ERROR_INVALID_SEED;
     }
 
-    if (errno == ERANGE || converted_seed > UINT_MAX)
+    if (converted_seed > UINT_MAX)
     {
         fprintf(stderr, "Error: Seed value out of range: %s\n", seed_str);
         return ERROR_INVALID_SEED;
