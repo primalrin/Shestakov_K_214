@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <time.h>
 #include <limits.h>
+#include <errno.h>
 
 typedef enum
 {
@@ -15,11 +15,17 @@ typedef enum
     ERROR_UPPERCASING_STRING = -6,
     ERROR_REARRANGING_STRING = -7,
     ERROR_CONCATENATING_STRING = -8,
-    ERROR_INVALID_FLAG = -9
+    ERROR_INVALID_FLAG = -9,
+    ERROR_OVERFLOW = -10,
+    ERROR_INVALID_STRING = -11
 } error_code;
 
-int strcmp(const char *s1, const char *s2)
+int my_strcmp(const char *s1, const char *s2)
 {
+    if (!s1 || !s2)
+    {
+        return -1;
+    }
     while (*s1 && (*s1 == *s2))
     {
         s1++;
@@ -28,36 +34,44 @@ int strcmp(const char *s1, const char *s2)
     return *(const unsigned char *)s1 - *(const unsigned char *)s2;
 }
 
-int string_length(const char *str)
+error_code string_length(const char *str, int *length)
 {
     if (!str)
     {
-        return ERROR_CALC_STRING_LENGTH;
+        fprintf(stderr, "Error: Invalid string pointer in string_length.\n");
+        return ERROR_INVALID_STRING;
     }
-    int length = 0;
-    while (str[length] != '\0')
+    *length = 0;
+    while (str[*length] != '\0')
     {
-        length++;
+        (*length)++;
+        if (*length == INT_MAX)
+        {
+            fprintf(stderr, "Error: String length exceeds maximum limit in string_length.\n");
+            return ERROR_OVERFLOW;
+        }
     }
-    return length;
+    return SUCCESS;
 }
 
-int reverse_string(const char *str, char **reversed_str)
+error_code reverse_string(const char *str, char **reversed_str)
 {
     if (!str || !reversed_str)
     {
+        fprintf(stderr, "Error: Invalid arguments in reverse_string.\n");
         return ERROR_INVALID_ARGUMENTS;
     }
-    int length = string_length(str);
-    if (length < 0)
+    int length;
+    error_code len_res = string_length(str, &length);
+    if (len_res != SUCCESS)
     {
-        return length;
+        return len_res;
     }
 
     *reversed_str = (char *)malloc(sizeof(char) * ((size_t)length + 1));
     if (!*reversed_str)
     {
-        perror("Memory allocation failed");
+        perror("Error: Memory allocation failed in reverse_string");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -69,23 +83,25 @@ int reverse_string(const char *str, char **reversed_str)
     return SUCCESS;
 }
 
-int uppercase_odd(const char *str, char **uppercased_str)
+error_code uppercase_odd(const char *str, char **uppercased_str)
 {
     if (!str || !uppercased_str)
     {
+        fprintf(stderr, "Error: Invalid arguments in uppercase_odd.\n");
         return ERROR_INVALID_ARGUMENTS;
     }
 
-    int length = string_length(str);
-    if (length < 0)
+    int length;
+    error_code len_res = string_length(str, &length);
+    if (len_res != SUCCESS)
     {
-        return length;
+        return len_res;
     }
 
     *uppercased_str = (char *)malloc(sizeof(char) * ((size_t)length + 1));
     if (!*uppercased_str)
     {
-        perror("Memory allocation failed");
+        perror("Error: Memory allocation failed in uppercase_odd");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -104,23 +120,25 @@ int uppercase_odd(const char *str, char **uppercased_str)
     return SUCCESS;
 }
 
-int rearrange_string(const char *str, char **rearranged_str)
+error_code rearrange_string(const char *str, char **rearranged_str)
 {
     if (!str || !rearranged_str)
     {
+        fprintf(stderr, "Error: Invalid arguments in rearrange_string.\n");
         return ERROR_INVALID_ARGUMENTS;
     }
 
-    int length = string_length(str);
-    if (length < 0)
+    int length;
+    error_code len_res = string_length(str, &length);
+    if (len_res != SUCCESS)
     {
-        return length;
+        return len_res;
     }
 
     *rearranged_str = (char *)malloc(sizeof(char) * ((size_t)length + 1));
     if (!*rearranged_str)
     {
-        perror("Memory allocation failed");
+        perror("Error: Memory allocation failed in rearrange_string");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -138,7 +156,7 @@ int rearrange_string(const char *str, char **rearranged_str)
         free(letters);
         free(other);
         free(*rearranged_str);
-        perror("Memory allocation failed");
+        perror("Error: Memory allocation failed in rearrange_string");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -186,41 +204,70 @@ int rearrange_string(const char *str, char **rearranged_str)
 
     return SUCCESS;
 }
-
-int concatenate_strings(int argc, char *argv[], char **concatenated_str)
+error_code validate_seed(const char *seed_str, unsigned int *seed)
 {
-    if (argc < 4 || !argv || !concatenated_str)
+    if (!seed_str || !seed)
     {
+        fprintf(stderr, "Error: Invalid arguments in validate_seed.\n");
         return ERROR_INVALID_ARGUMENTS;
     }
-
     char *endptr;
-    unsigned long converted_seed = strtoul(argv[2], &endptr, 10);
+    errno = 0;
+    unsigned long converted_seed = strtoul(seed_str, &endptr, 10);
 
-    if (*endptr != '\0' || converted_seed > UINT_MAX)
+    if (*endptr != '\0')
     {
-        fprintf(stderr, "Invalid seed value: %s\n", argv[2]);
+        fprintf(stderr, "Error: Invalid seed value: %s\n", seed_str);
         return ERROR_INVALID_SEED;
     }
 
-    unsigned int local_seed = (unsigned int)converted_seed;
+    if (errno == ERANGE || converted_seed > UINT_MAX)
+    {
+        fprintf(stderr, "Error: Seed value out of range: %s\n", seed_str);
+        return ERROR_INVALID_SEED;
+    }
+
+    *seed = (unsigned int)converted_seed;
+    return SUCCESS;
+}
+
+error_code concatenate_strings(int argc, char *argv[], char **concatenated_str)
+{
+    if (argc < 4 || !argv || !concatenated_str)
+    {
+        fprintf(stderr, "Error: Invalid arguments in concatenate_strings.\n");
+        return ERROR_INVALID_ARGUMENTS;
+    }
+
+    unsigned int local_seed;
+    error_code seed_res = validate_seed(argv[2], &local_seed);
+    if (seed_res != SUCCESS)
+    {
+        return seed_res;
+    }
 
     srand(local_seed);
     int total_length = 0;
     for (int i = 3; i < argc; i++)
     {
-        int len_res = string_length(argv[i]);
-        if (len_res < 0)
+        int len_res_local;
+        error_code len_res = string_length(argv[i], &len_res_local);
+        if (len_res != SUCCESS)
         {
             return len_res;
         }
-        total_length += len_res;
+        total_length += len_res_local;
+        if (total_length < len_res_local)
+        {
+            fprintf(stderr, "Error: Integer overflow detected in concatenate_strings.\n");
+            return ERROR_OVERFLOW;
+        }
     }
 
     *concatenated_str = (char *)malloc(sizeof(char) * ((size_t)total_length + 1));
     if (!*concatenated_str)
     {
-        perror("Memory allocation failed");
+        perror("Error: Memory allocation failed in concatenate_strings");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -229,7 +276,7 @@ int concatenate_strings(int argc, char *argv[], char **concatenated_str)
     if (!indices)
     {
         free(*concatenated_str);
-        perror("Failed to allocate memory for indices");
+        perror("Error: Memory allocation failed for indices in concatenate_strings");
         return ERROR_MEMORY_ALLOCATION;
     }
 
@@ -250,12 +297,13 @@ int concatenate_strings(int argc, char *argv[], char **concatenated_str)
     {
         int str_index = indices[i];
         const char *current_str = argv[str_index];
-        int str_len = string_length(current_str);
-        if (str_len < 0)
+        int str_len;
+        error_code str_len_res = string_length(current_str, &str_len);
+        if (str_len_res != SUCCESS)
         {
             free(indices);
             free(*concatenated_str);
-            return str_len;
+            return str_len_res;
         }
         for (int j = 0; j < str_len; j++)
         {
@@ -270,60 +318,78 @@ int concatenate_strings(int argc, char *argv[], char **concatenated_str)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 3)
+    if (argc < 2)
     {
-        fprintf(stderr, "Usage: %s <flag> <string> [<unsigned int> <strings...>]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <flag> [string] [<unsigned int> <strings...>]\n", argv[0]);
         return ERROR_INVALID_ARGUMENTS;
     }
 
     char *result_str = NULL;
     error_code result_code = SUCCESS;
 
-    if (strcmp(argv[1], "-l") == 0)
+    if (my_strcmp(argv[1], "-l") == 0)
     {
-        int length = string_length(argv[2]);
-        if (length < 0)
+        if (argc != 3)
+        {
+            fprintf(stderr, "Usage: %s -l <string>\n", argv[0]);
+            return ERROR_INVALID_ARGUMENTS;
+        }
+        int length;
+        result_code = string_length(argv[2], &length);
+        if (result_code != SUCCESS)
         {
             fprintf(stderr, "Error calculating string length.\n");
-            return length;
+            return result_code;
         }
         printf("String length: %d\n", length);
     }
-    else if (strcmp(argv[1], "-r") == 0)
+    else if (my_strcmp(argv[1], "-r") == 0)
     {
+        if (argc != 3)
+        {
+            fprintf(stderr, "Usage: %s -r <string>\n", argv[0]);
+            return ERROR_INVALID_ARGUMENTS;
+        }
         result_code = reverse_string(argv[2], &result_str);
         if (result_code != SUCCESS)
         {
-            fprintf(stderr, "Error reversing string.\n");
             return result_code;
         }
         printf("Reversed string: %s\n", result_str);
     }
-    else if (strcmp(argv[1], "-u") == 0)
+    else if (my_strcmp(argv[1], "-u") == 0)
     {
+        if (argc != 3)
+        {
+            fprintf(stderr, "Usage: %s -u <string>\n", argv[0]);
+            return ERROR_INVALID_ARGUMENTS;
+        }
         result_code = uppercase_odd(argv[2], &result_str);
         if (result_code != SUCCESS)
         {
-            fprintf(stderr, "Error uppercasing odd characters.\n");
             return result_code;
         }
         printf("Uppercased odd string: %s\n", result_str);
     }
-    else if (strcmp(argv[1], "-n") == 0)
+    else if (my_strcmp(argv[1], "-n") == 0)
     {
+        if (argc != 3)
+        {
+            fprintf(stderr, "Usage: %s -n <string>\n", argv[0]);
+            return ERROR_INVALID_ARGUMENTS;
+        }
         result_code = rearrange_string(argv[2], &result_str);
         if (result_code != SUCCESS)
         {
-            fprintf(stderr, "Error rearranging string.\n");
             return result_code;
         }
         printf("Rearranged string: %s\n", result_str);
     }
-    else if (strcmp(argv[1], "-c") == 0)
+    else if (my_strcmp(argv[1], "-c") == 0)
     {
         if (argc < 4)
         {
-            fprintf(stderr, "Not enough arguments for -c flag.\n");
+            fprintf(stderr, "Usage: %s -c <seed> <string1> <string2> ...\n", argv[0]);
             return ERROR_INVALID_ARGUMENTS;
         }
 
@@ -332,7 +398,6 @@ int main(int argc, char *argv[])
 
         if (result_code != SUCCESS)
         {
-            fprintf(stderr, "Error concatenating strings.\n");
             return result_code;
         }
         printf("Concatenated string: %s\n", concatenated_str);
@@ -340,7 +405,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        fprintf(stderr, "Invalid flag.\n");
+        fprintf(stderr, "Error: Invalid flag.\n");
         return ERROR_INVALID_FLAG;
     }
 
