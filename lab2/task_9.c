@@ -1,176 +1,237 @@
-#include <stdio.h>
+#include <limits.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <math.h>
-#include <float.h>
-#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef enum
 {
-    IS_FINITE_REP_OK = 0,
-    IS_FINITE_REP_INVALID_BASE,
-    IS_FINITE_REP_OVERFLOW,
-    IS_FINITE_REP_MAX_ITER_REACHED
-} IsFiniteRepStatus;
+    SUCCESS,
+    ERROR_NAN,
+    ERROR_OVERFLOW,
+    ERROR_INVALID_ARG,
+    ERROR_MEMORY_ALLOC,
+    ERROR_FILE_OPEN,
+    ERROR_ITERATION_LIMIT,
+    ERROR_NO_SOLUTION,
+} ReturnCode;
 
-typedef enum
+static void log_error(ReturnCode code)
 {
-    CHECK_NUMBERS_OK = 0,
-    CHECK_NUMBERS_INVALID_BASE,
-    CHECK_NUMBERS_INVALID_COUNT,
-    CHECK_NUMBERS_BASE_TOO_LARGE,
-    CHECK_NUMBERS_INVALID_NUMBER_RANGE,
-    CHECK_NUMBERS_IS_FINITE_REP_ERROR
-} CheckNumbersStatus;
-
-IsFiniteRepStatus is_finite_representation(double number, int base, bool *result)
-{
-    if (base < 2)
+    switch (code)
     {
-        return IS_FINITE_REP_INVALID_BASE;
-    }
-    if (!result)
-    {
-        return IS_FINITE_REP_INVALID_BASE;
-    }
-    double fractional_part = number;
-    const int MAX_ITERATIONS = 1000;
-    int iterations = 0;
+    case ERROR_NAN:
+        fprintf(stderr, "Error: Found not a number\n");
+        break;
 
-    while (fractional_part > 1e-15 && iterations < MAX_ITERATIONS)
-    {
-        if (fabs(fractional_part) > DBL_MAX / base)
-        {
-            return IS_FINITE_REP_OVERFLOW;
-        }
-        fractional_part *= base;
-        int integer_part = (int)fractional_part;
-        fractional_part -= integer_part;
-        iterations++;
-    }
+    case ERROR_OVERFLOW:
+        fprintf(stderr, "Error: Overflow detected\n");
+        break;
 
-    if (iterations >= MAX_ITERATIONS && fractional_part > 1e-15)
-    {
-        *result = false;
-        return IS_FINITE_REP_MAX_ITER_REACHED;
-    }
+    case ERROR_INVALID_ARG:
+        fprintf(stderr, "Error: Invalid arguments\n");
+        break;
 
-    *result = fractional_part < 1e-15;
-    return IS_FINITE_REP_OK;
+    case ERROR_MEMORY_ALLOC:
+        fprintf(stderr, "Error: Failed to allocate memory\n");
+        break;
+
+    case ERROR_FILE_OPEN:
+        fprintf(stderr, "Error: Failed to open file\n");
+        break;
+
+    case ERROR_ITERATION_LIMIT:
+        fprintf(stderr, "Error: Too many iterations\n");
+        break;
+
+    case ERROR_NO_SOLUTION:
+        fprintf(stderr, "Error: There is no solution in your interval\n");
+        break;
+
+    default:
+        fprintf(stderr, "Error: UNKNOWN ERROR CODE\n");
+        break;
+    }
 }
 
-CheckNumbersStatus check_numbers(int base, int count, ...)
+static int gcd(int a, int b)
 {
-    if (base < 2)
+    while (b != 0)
     {
-        printf("Error: Base must be greater than or equal to 2.\n");
-        return CHECK_NUMBERS_INVALID_BASE;
+        int temp = b;
+        b = a % b;
+        a = temp;
     }
-    if (count <= 0)
+    return a;
+}
+
+static ReturnCode sieve_of_eratosthenes(bool *primes, int n)
+{
+    if (!primes)
     {
-        printf("Error: Invalid count of numbers.\n");
-        return CHECK_NUMBERS_INVALID_COUNT;
+        return ERROR_INVALID_ARG;
     }
 
-    if (base > INT_MAX / 2)
+    for (int i = 0; i <= n; i++)
     {
-        printf("Error: Base is too large to prevent potential overflow.\n");
-        return CHECK_NUMBERS_BASE_TOO_LARGE;
+        primes[i] = true;
     }
+    primes[0] = primes[1] = false;
+    for (int p = 2; p * p <= n; p++)
+    {
+        if (primes[p])
+        {
+            for (int i = p * p; i <= n; i += p)
+            {
+                primes[i] = false;
+            }
+        }
+    }
+    return SUCCESS;
+}
+
+static bool check_fraction(int numerator, int denominator, int base)
+{
+    bool *is_prime = (bool *)malloc(sizeof(bool) * (denominator + 1));
+    if (!is_prime)
+    {
+        return false;
+    }
+
+    ReturnCode res = sieve_of_eratosthenes(is_prime, denominator);
+    if (res != SUCCESS)
+    {
+        free(is_prime);
+        return false;
+    }
+
+    for (int i = 2; i <= denominator; i++)
+    {
+        if (denominator % i == 0 && is_prime[i])
+        {
+            if (base % i != 0)
+            {
+                free(is_prime);
+                return false;
+            }
+        }
+    }
+    free(is_prime);
+    return true;
+}
+
+static ReturnCode double_to_fraction(double value, int *numerator, int *denominator, double tolerance)
+{
+    if (!numerator || !denominator)
+    {
+        return ERROR_INVALID_ARG;
+    }
+
+    double fractional_part = value;
+    int previous_numerator = 0, current_numerator = 1;
+    int previous_denominator = 1, current_denominator = 0;
+    double quotient;
+
+    while (fabs(value - (double)current_numerator / (double)current_denominator) > tolerance)
+    {
+        quotient = floor(fractional_part);
+        int temp_numerator = current_numerator;
+        int temp_denominator = current_denominator;
+
+        current_numerator = (int)(quotient * current_numerator + previous_numerator);
+        current_denominator = (int)(quotient * current_denominator + previous_denominator);
+
+        if (current_numerator > INT_MAX || current_denominator > INT_MAX)
+        {
+            return ERROR_OVERFLOW;
+        }
+
+        previous_numerator = temp_numerator;
+        previous_denominator = temp_denominator;
+
+        if (fractional_part == quotient)
+        {
+            break;
+        }
+
+        fractional_part = 1.0 / (fractional_part - quotient);
+    }
+
+    *numerator = current_numerator;
+    *denominator = current_denominator;
+
+    int common_divisor = gcd(*numerator, *denominator);
+    *numerator /= common_divisor;
+    *denominator /= common_divisor;
+
+    return SUCCESS;
+}
+
+static bool *check_fractions(ReturnCode *code, int base, int fractions_num, ...)
+{
+    if (base < 2 || base > 36)
+    {
+        *code = ERROR_INVALID_ARG;
+        return NULL;
+    }
+
+    bool *result = malloc(sizeof(bool) * fractions_num);
+    if (!result)
+    {
+        *code = ERROR_MEMORY_ALLOC;
+        return NULL;
+    }
+
+    double eps = 0.000001;
 
     va_list args;
-    va_start(args, count);
-
-    for (int i = 0; i < count; ++i)
+    va_start(args, fractions_num);
+    for (int i = 0; i < fractions_num; i++)
     {
-        double number = va_arg(args, double);
-
-        if (number <= 0 || number >= 1)
+        double fraction = fabs(va_arg(args, double));
+        if (fraction > 1.0 + eps)
         {
-            printf("Error: Numbers must be in the range (0, 1).\n");
+            *code = ERROR_INVALID_ARG;
+            free(result);
             va_end(args);
-            return CHECK_NUMBERS_INVALID_NUMBER_RANGE;
+            return NULL;
         }
-        bool finite;
-        IsFiniteRepStatus is_finite_status = is_finite_representation(number, base, &finite);
-        if (is_finite_status != IS_FINITE_REP_OK && is_finite_status != IS_FINITE_REP_MAX_ITER_REACHED)
+        int numerator, denominator;
+        ReturnCode res = double_to_fraction(fraction, &numerator, &denominator, eps);
+        if (res != SUCCESS)
         {
-            printf("Error while checking if number is finite.\n");
-            if (is_finite_status == IS_FINITE_REP_INVALID_BASE)
-            {
-                printf("Invalid base passed to is_finite_representation.\n");
-            }
-            else if (is_finite_status == IS_FINITE_REP_OVERFLOW)
-            {
-                printf("Potential overflow detected in is_finite_representation.\n");
-            }
+            *code = res;
+            free(result);
             va_end(args);
-            return CHECK_NUMBERS_IS_FINITE_REP_ERROR;
+            return NULL;
         }
 
-        if (finite)
-        {
-            printf("Number %.6f has a finite representation in base %d.\n", number, base);
-        }
-        else
-        {
-            printf("Number %.6f does not have a finite representation in base %d.\n", number, base);
-        }
+        result[i] = check_fraction(numerator, denominator, base);
     }
-
     va_end(args);
-    return CHECK_NUMBERS_OK;
+
+    return result;
 }
 
 int main(void)
 {
+    ReturnCode code = SUCCESS;
+    int n = 3;
+    double eps = 0.000001;
 
-    printf("Test 1: Binary system (base 2)\n");
-    if (check_numbers(2, 3, 0.5, 0.25, 0.125) != CHECK_NUMBERS_OK)
+    bool *result = check_fractions(&code, 14, n, 0.3, 14, 15);
+    if (code != SUCCESS)
     {
-        return EXIT_FAILURE;
+        log_error(code);
+        return code;
     }
 
-    printf("\nTest 2: Decimal system (base 10)\n");
-    if (check_numbers(10, 2, 0.1, 0.3333) != CHECK_NUMBERS_OK)
+    for (int i = 0; i < n; i++)
     {
-        return EXIT_FAILURE;
+        printf("%d Number have a finite representation: %s\n", i + 1, result[i] ? "true" : "false");
     }
 
-    printf("\nTest 3: Ternary system (base 3)\n");
-    if (check_numbers(3, 2, 1.0 / 3.0, 0.2) != CHECK_NUMBERS_OK)
-    {
-        return EXIT_FAILURE;
-    }
-
-    printf("\nTest 4: Invalid base\n");
-    if (check_numbers(1, 2, 0.5, 0.25) != CHECK_NUMBERS_INVALID_BASE)
-    {
-        printf("Error: Test 4 failed. Expected CHECK_NUMBERS_INVALID_BASE.\n");
-        return EXIT_FAILURE;
-    }
-
-    printf("\nTest 5: Invalid count\n");
-    if (check_numbers(2, 0, 0.5, 0.25) != CHECK_NUMBERS_INVALID_COUNT)
-    {
-        printf("Error: Test 5 failed. Expected CHECK_NUMBERS_INVALID_COUNT.\n");
-        return EXIT_FAILURE;
-    }
-
-    printf("\nTest 6: Invalid number range\n");
-    if (check_numbers(2, 2, 1.5, 0.25) != CHECK_NUMBERS_INVALID_NUMBER_RANGE)
-    {
-        printf("Error: Test 6 failed. Expected CHECK_NUMBERS_INVALID_NUMBER_RANGE.\n");
-        return EXIT_FAILURE;
-    }
-
-    printf("\nTest 7: Large base\n");
-    if (check_numbers(INT_MAX / 2 + 1, 2, 0.5, 0.25) != CHECK_NUMBERS_BASE_TOO_LARGE)
-    {
-        printf("Error: Test 7 failed. Expected CHECK_NUMBERS_BASE_TOO_LARGE.\n");
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
+    free(result);
+    return 0;
 }
